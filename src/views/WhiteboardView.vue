@@ -17,6 +17,15 @@
   <div class="fabric">
     <canvas ref="canvas" width="500" height="500"></canvas>
       <button class="piscar" @click="addEditableText">T</button>
+          <label for="font-select">Selecione a fonte:</label>
+        <select id="font-select" v-model="selectedFont">
+          <option value="Arial">Arial</option>
+          <option value="Verdana">Verdana</option>
+          <option value="Times New Roman">Times New Roman</option>
+          <option value="Courier New">Courier New</option>
+          <option value="Comic Sans MS">Comic Sans MS</option>
+        </select>
+        <input type="range" min="10" max="128" v-model="tamanhoFonte">
   <input type="color" v-model="selectedColor">
     <button @click="addSquare">Add quadro</button>
     <button @click="addcirculo">Add quadro</button>
@@ -24,22 +33,24 @@
   <button @click="undo">Desfazer</button>
       <button @click="redo">Refazer</button>
        <button @click="draw">Pintar</button>
-  <input type="range" min="1" max="20" v-model="lineWidth">
-
+  <input type="range" min="1" max="50" v-model="lineWidth">
         <button @click="erase">Borracha</button>
-
+    <button @click="saveCanvas">Salvar</button>
+      <button @click="compartilhar">Compartilhar</button>
   </div>
 </template>
 
 <script>
 import {fabric} from "fabric"
-
+import { saveAs } from 'file-saver';
   export default {
       mounted() {
     this.canvas = new fabric.Canvas(this.$refs.canvas);
     this.canvas.on('text:editing:entered', (options) => {
       this.editableText = options.target;
     });
+
+
       },
 
        data() {
@@ -50,6 +61,8 @@ import {fabric} from "fabric"
       redoStack: [],
       lineWidth: 5,  
       brushSize: 10,
+      tamanhoFonte: 10,
+       selectedFont: 'Arial',
        editableText: null,
     };
   },
@@ -100,11 +113,13 @@ import {fabric} from "fabric"
          this.canvas.isDrawingMode = false;
     },
  addEditableText() {
-      const editableText = new fabric.IText('|', {
+      const editableText = new fabric.IText('Digite aqui...', {
         left: 50,
         top: 50,
         fill: 'black',
         fontSize: 20,
+        font : this.tamanhoFonte,
+        fontFamily: this.selectedFont,
       });
       document.addEventListener('keydown', (event) => {
         if (event.key === 'Enter') {
@@ -113,6 +128,7 @@ import {fabric} from "fabric"
         }
       });
       this.canvas.add(editableText);
+      
       this.editableText = editableText;
     },
 
@@ -127,6 +143,7 @@ import {fabric} from "fabric"
 
     }
   },
+   
   undo() {
       if (this.undoStack.length > 0) {
         const lastState = this.undoStack.pop();
@@ -145,9 +162,40 @@ import {fabric} from "fabric"
       this.undoStack.push(this.canvas.toJSON());
       this.redoStack = [];
     },
+    saveCanvas() {
+      const dataUrl = this.canvas.toDataURL('image/png');
+      const blob = this.dataURItoBlob(dataUrl);
+      saveAs(blob, 'canvas.png');
+    },
+    dataURItoBlob(dataURI) {
+      const byteString = atob(dataURI.split(',')[1]);
+      const mimeString = dataURI.split(',')[0].split(':')[1].split(';')[0];
+      const ab = new ArrayBuffer(byteString.length);
+      const ia = new Uint8Array(ab);
+      for (let i = 0; i < byteString.length; i++) {
+        ia[i] = byteString.charCodeAt(i);
+      }
+      return new Blob([ab], { type: mimeString });
+    },
+  },
+    compartilhar() {
+    const canvas = this.$refs.canvas;
 
-    
-}
+    // converte o conteúdo do canvas em uma imagem
+    const imagem = canvas.toDataURL("image/png");
+
+    // usa a API Web Share para compartilhar a imagem
+    navigator.share({
+      title: "Compartilhar Canvas",
+      text: "Olha só o que eu desenhei!",
+      url: imagem
+    }).then(() => {
+      console.log("Conteúdo compartilhado com sucesso!");
+    }).catch((error) => {
+      console.log("Erro ao compartilhar conteúdo:", error);
+    });
+  }
+
     }
 
 
@@ -198,14 +246,4 @@ ul {
 canvas{
   border: 1px solid black;
 }
-.blinking {
-  animation: blink 1s step-end infinite;
-}
-
-@keyframes blink {
-  50% {
-    opacity: 0;
-  }
-}
-
 </style>
