@@ -85,20 +85,57 @@ import { saveAs } from 'file-saver';
   },
 
       methods:{
-           addSquare(event) {
-      const rect = new fabric.Rect({
-        left: event.offsetX,
-        top: event.offsetY,
-       fill: this.selectedColor,
-        width: 50,
-        height: 50,
-        
-      });
 
-      this.canvas.add(rect);
-        this.saveState(); 
-      this.canvas.isDrawingMode = false;
-      },
+            addSquare() {
+      // Defina a variável de desenho como verdadeira
+      this.drawing = true
+
+      // Adicione um evento de clique no canvas
+      this.canvas.on('mouse:down', (event) => {
+        if (this.drawing) {
+          // Crie um novo quadrado Fabric.js
+          this.quadrado = new fabric.Rect({
+            left: event.e.offsetX,
+            top: event.e.offsetY,
+            width: 0,
+            height: 0,
+            fill: 'transparent',
+            stroke: 'black',
+            strokeWidth: 2,
+            selectable: true
+          })
+
+          // Adicione o quadrado ao canvas
+          this.canvas.add(this.quadrado)
+
+          // Adicione um evento de movimento do mouse no canvas
+          this.canvas.on('mouse:move', (event) => {
+            // Calcule as dimensões do quadrado com base na posição do mouse atual e sua posição inicial
+            let width = event.e.offsetX - this.quadrado.left
+            let height = event.e.offsetY - this.quadrado.top
+
+            // Atualize as dimensões do quadrado
+            this.quadrado.set({ width: width, height: height })
+            this.quadrado.setCoords()
+
+            // Renderize o canvas novamente
+            this.canvas.renderAll()
+          })
+
+          // Adicione um evento de liberação do mouse no canvas
+          this.canvas.on('mouse:up', () => {
+            // Defina a variável de desenho como falsa e remova os eventos de movimento e liberação do mouse
+            this.drawing = false
+            this.canvas.off('mouse:move')
+            this.canvas.off('mouse:up')
+          })
+        }
+        
+      }
+      )
+  
+    },
+
 
     startDrawing() {
       // Defina a variável de desenho como verdadeira
@@ -109,7 +146,7 @@ import { saveAs } from 'file-saver';
         if (this.drawing) {
           // Crie uma nova linha Fabric.js
           this.linha = new fabric.Line([event.e.offsetX, event.e.offsetY, event.e.offsetX, event.e.offsetY], {
-            stroke: 'black',
+            stroke: this.selectedColor,
             strokeWidth: 2,
             selectable: true
           })
@@ -153,20 +190,11 @@ import { saveAs } from 'file-saver';
       }
     },
 
-    addcirculo(event) {
-      
-        const circle = new fabric.Circle({
-          left: event.offsetX,
-          top: event.offsetY,
-          fill: this.selectedColor,
-          radius: 25,
-          
-      });
-
-      this.canvas.add(circle);
-        this.saveState();
-         this.canvas.isDrawingMode = false;
+   
+    addcirculo() {
+     
     },
+
  addEditableText() {
       const editableText = new fabric.IText('Digite aqui...', {
         left: 50,
