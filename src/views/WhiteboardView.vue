@@ -15,7 +15,9 @@
   </nav>
   
   <div class="fabric">
-    <canvas ref="canvas" width="500" height="500"></canvas>
+    <canvas ref="canvas" class="canvas" width="1800" height="760"></canvas>
+
+    <div class="tools">
       <button class="piscar" @click="addEditableText">T</button>
           <label for="font-select">Selecione a fonte:</label>
         <select id="font-select" v-model="selectedFont">
@@ -29,18 +31,30 @@
   <input type="color" v-model="selectedColor">
     <button @click="addSquare">Add quadro</button>
     <button @click="addcirculo">Add quadro</button>
+       <button @click="criarLinha">Criar linha</button>
      <button @click="deleteSelected">Excluir selecionado</button>
   <button @click="undo">Desfazer</button>
       <button @click="redo">Refazer</button>
        <button @click="draw">Pintar</button>
+        <button @click="startDrawing">Desenhar linha</button>
   <input type="range" min="1" max="50" v-model="lineWidth">
         <button @click="erase">Borracha</button>
-    <button @click="saveCanvas">Salvar</button>
-      <button @click="compartilhar">Compartilhar</button>
+    <button @click="saveCanvas">    
+  </button>
+    
+      <button @click="compartilhar">Compartilhar <font-awesome-icon icon="fa-solid fa-user-secret" /></button>
+
+      </div>
+
+     
   </div>
 </template>
 
 <script>
+
+
+
+
 import {fabric} from "fabric"
 import { saveAs } from 'file-saver';
   export default {
@@ -55,6 +69,7 @@ import { saveAs } from 'file-saver';
 
        data() {
     return {
+      pencil:'../assets/tools/pencil.svg',
            selectedColor: "#000000",
       inputText: '',
        undoStack: [],
@@ -64,6 +79,8 @@ import { saveAs } from 'file-saver';
       tamanhoFonte: 10,
        selectedFont: 'Arial',
        editableText: null,
+          drawing: false,
+      linha: null
     };
   },
 
@@ -82,6 +99,44 @@ import { saveAs } from 'file-saver';
         this.saveState(); 
       this.canvas.isDrawingMode = false;
       },
+
+    startDrawing() {
+      // Defina a variável de desenho como verdadeira
+      this.drawing = true
+
+      // Adicione um evento de clique no canvas
+      this.canvas.on('mouse:down', (event) => {
+        if (this.drawing) {
+          // Crie uma nova linha Fabric.js
+          this.linha = new fabric.Line([event.e.offsetX, event.e.offsetY, event.e.offsetX, event.e.offsetY], {
+            stroke: 'black',
+            strokeWidth: 2,
+            selectable: true
+          })
+
+          // Adicione a linha ao canvas
+          this.canvas.add(this.linha)
+
+          // Adicione um evento de movimento do mouse no canvas
+          this.canvas.on('mouse:move', (event) => {
+            // Atualize as coordenadas finais da linha para seguir o movimento do mouse
+            this.linha.set({ x2: event.e.offsetX, y2: event.e.offsetY })
+            this.linha.setCoords()
+
+            // Renderize o canvas novamente
+            this.canvas.renderAll()
+          })
+
+          // Adicione um evento de liberação do mouse no canvas
+          this.canvas.on('mouse:up', () => {
+            // Defina a variável de desenho como falsa e remova os eventos de movimento e liberação do mouse
+            this.drawing = false
+            this.canvas.off('mouse:move')
+            this.canvas.off('mouse:up')
+          })
+        }
+      })
+    },
     erase() {
       this.canvas.isDrawingMode = true;
       this.canvas.freeDrawingBrush.color = "#ffffff";
@@ -201,13 +256,22 @@ import { saveAs } from 'file-saver';
 
 </script>
 
+
+
+
 <style>
+
+
+
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
+body{
+  overflow: hidden;
+}
 nav {
   background: rgb(39, 0, 164);
   display: flex;
@@ -237,13 +301,23 @@ ul {
 }
 
 .fabric{
-  height: 500px;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
 }
 
 canvas{
+
   border: 1px solid black;
+}
+.tools{
+  display: flex;
+  align-items: center;
+  position: absolute;
+  bottom: 0;
+  /* background: black; */
+  height: 60px;
+  border-radius: 10px;
 }
 </style>
