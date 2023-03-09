@@ -19,6 +19,7 @@
 
     <div class="tools">
       <button class="piscar" @click="addEditableText">T</button>
+     <button @click="addComment">Adicionar comentário</button>
           <label for="font-select">Selecione a fonte:</label>
         <select id="font-select" v-model="selectedFont">
           <option value="Arial">Arial</option>
@@ -27,32 +28,34 @@
           <option value="Courier New">Courier New</option>
           <option value="Comic Sans MS">Comic Sans MS</option>
         </select>
-        <input type="range" min="10" max="128" v-model="tamanhoFonte">
   <input type="color" v-model="selectedColor">
-    <button @click="addSquare">Add quadro</button>
-    <button @click="addcirculo">Add quadro</button>
+    <button @click="addSquare"> quadro</button>
+    <button @click="addCircle"> Circlo</button>
+       <button @click="addHexagon">Desenhar Hexágono</button>
+    <button @click="addTriangle"> Triangulo</button>
+    <button @click="addArrow">Arrow</button>
+    
+
+
        <button @click="criarLinha">Criar linha</button>
      <button @click="deleteSelected">Excluir selecionado</button>
-  <button @click="undo">Desfazer</button>
-      <button @click="redo">Refazer</button>
-       <button @click="draw">Pintar</button>
-        <button @click="startDrawing">Desenhar linha</button>
+       <button @click="draw">
+        <i class="pi pi-pencil" style="font-size: 1.5rem"></i>
+
+      </button>
+
   <input type="range" min="1" max="50" v-model="lineWidth">
         <button @click="erase">Borracha</button>
-    <button @click="saveCanvas">    
+        <button @click="clearCanvas">Limpar</button>
+    <button @click="saveCanvas">Salvar
   </button>
-    
-      <button @click="compartilhar">Compartilhar <font-awesome-icon icon="fa-solid fa-user-secret" /></button>
 
-      </div>
 
-     
+     </div>
   </div>
 </template>
 
 <script>
-
-
 
 
 import {fabric} from "fabric"
@@ -64,7 +67,14 @@ import { saveAs } from 'file-saver';
       this.editableText = options.target;
     });
 
-
+    this.comment = {
+      text: '',
+      color: 'black',
+      fontSize: 20,
+      left: 0,
+      top: 0
+    };
+  
       },
 
        data() {
@@ -72,24 +82,24 @@ import { saveAs } from 'file-saver';
       pencil:'../assets/tools/pencil.svg',
            selectedColor: "#000000",
       inputText: '',
-       undoStack: [],
-      redoStack: [],
       lineWidth: 5,  
       brushSize: 10,
       tamanhoFonte: 10,
        selectedFont: 'Arial',
        editableText: null,
           drawing: false,
-      linha: null
+      linha: null,
+      
     };
   },
 
       methods:{
 
             addSquare() {
+             this.drawingCircle = false;
       // Defina a variável de desenho como verdadeira
       this.drawing = true
-
+      this.canvas.isDrawingMode = false;
       // Adicione um evento de clique no canvas
       this.canvas.on('mouse:down', (event) => {
         if (this.drawing) {
@@ -100,7 +110,7 @@ import { saveAs } from 'file-saver';
             width: 0,
             height: 0,
             fill: 'transparent',
-            stroke: 'black',
+            stroke: this.selectedColor,
             strokeWidth: 2,
             selectable: true
           })
@@ -121,6 +131,9 @@ import { saveAs } from 'file-saver';
             // Renderize o canvas novamente
             this.canvas.renderAll()
           })
+          this.quadrado.on('mousedown', () => {
+            this.drawing = false
+          })
 
           // Adicione um evento de liberação do mouse no canvas
           this.canvas.on('mouse:up', () => {
@@ -129,6 +142,11 @@ import { saveAs } from 'file-saver';
             this.canvas.off('mouse:move')
             this.canvas.off('mouse:up')
           })
+
+          // Desative a criação de círculos
+          this.drawingCircle = false;
+          this.canvas.off('mouse:down');
+      
         }
         
       }
@@ -136,29 +154,40 @@ import { saveAs } from 'file-saver';
   
     },
 
-
-    startDrawing() {
+   addCircle() {
+    
       // Defina a variável de desenho como verdadeira
       this.drawing = true
-
+      this.canvas.discardActiveObject();
+      this.canvas.renderAll();
+      this.canvas.isDrawingMode = false;
       // Adicione um evento de clique no canvas
       this.canvas.on('mouse:down', (event) => {
         if (this.drawing) {
-          // Crie uma nova linha Fabric.js
-          this.linha = new fabric.Line([event.e.offsetX, event.e.offsetY, event.e.offsetX, event.e.offsetY], {
+          // Crie um novo círculo Fabric.js
+          this.circulo = new fabric.Circle({
+            left: event.e.offsetX,
+            top: event.e.offsetY,
+            radius: 0,
+            fill: 'transparent',
             stroke: this.selectedColor,
             strokeWidth: 2,
             selectable: true
           })
 
-          // Adicione a linha ao canvas
-          this.canvas.add(this.linha)
+          // Adicione o círculo ao canvas
+          this.canvas.add(this.circulo)
 
           // Adicione um evento de movimento do mouse no canvas
           this.canvas.on('mouse:move', (event) => {
-            // Atualize as coordenadas finais da linha para seguir o movimento do mouse
-            this.linha.set({ x2: event.e.offsetX, y2: event.e.offsetY })
-            this.linha.setCoords()
+            // Calcule o raio do círculo com base na posição do mouse atual e sua posição inicial
+            let dx = event.e.offsetX - this.circulo.left
+            let dy = event.e.offsetY - this.circulo.top
+            let radius = Math.sqrt(dx * dx + dy * dy)
+
+            // Atualize o raio do círculo
+            this.circulo.set({ radius: radius })
+            this.circulo.setCoords()
 
             // Renderize o canvas novamente
             this.canvas.renderAll()
@@ -171,9 +200,197 @@ import { saveAs } from 'file-saver';
             this.canvas.off('mouse:move')
             this.canvas.off('mouse:up')
           })
+
+          // Adicione um evento de clique no círculo
+          this.circulo.on('mousedown', () => {
+            // Defina a variável de desenho como falsa e remova os eventos de movimento e liberação do mouse
+            this.drawing = false
+            this.canvas.off('mouse:move')
+            this.canvas.off('mouse:up')
+          })
+ 
+          this.canvas.on('selection:created', (event) => {
+            // Se o objeto selecionado for diferente do círculo, desative o desenho do círculo
+            if (event.target !== this.circle) {
+              this.drawingCircle = false;
+            }
+          });
+      
+          this.canvas.off('mouse:down');
+
         }
       })
     },
+
+    addTriangle() {
+      // Defina a variável de desenho como verdadeira
+      this.drawingTriangle = true;
+      this.drawingSquare = false;
+      this.drawingCircle = false;
+
+      // Limpe a seleção atual no canvas
+      this.canvas.discardActiveObject();
+      this.canvas.renderAll();
+
+      // Adicione um evento de clique no canvas
+      this.canvas.on('mouse:down', (event) => {
+        if (this.drawingTriangle) {
+          // Crie um novo triângulo Fabric.js
+          this.triangle = new fabric.Triangle({
+            left: event.e.offsetX,
+            top: event.e.offsetY,
+            width: 0,
+            height: 0,
+            fill: 'transparent',
+           stroke: this.selectedColor,
+            strokeWidth: 2,
+            selectable: true
+          });
+
+          // Adicione o triângulo ao canvas
+          this.canvas.add(this.triangle);
+
+          // Adicione um evento de movimento do mouse no canvas
+          this.canvas.on('mouse:move', (event) => {
+            // Calcule as dimensões do triângulo com base na posição do mouse atual e sua posição inicial
+            let width = event.e.offsetX - this.triangle.left;
+            let height = event.e.offsetY - this.triangle.top;
+
+            // Atualize as dimensões do triângulo
+            this.triangle.set({ width: width, height: height });
+            this.triangle.setCoords();
+
+            // Renderize o canvas novamente
+            this.canvas.renderAll();
+          });
+
+          // Adicione um evento de liberação do mouse no canvas
+          this.canvas.on('mouse:up', () => {
+            // Defina a variável de desenho como falsa e remova os eventos de movimento e liberação do mouse
+            this.drawingTriangle = false;
+            this.canvas.off('mouse:move');
+            this.canvas.off('mouse:up');
+          });
+        }
+      });
+    },
+    addHexagon() {
+      // Defina a variável de desenho como verdadeira
+      this.drawingHexagon = true;
+
+      // Limpe a seleção atual no canvas
+      this.canvas.discardActiveObject();
+      this.canvas.renderAll();
+
+      // Adicione um evento de clique no canvas
+      this.canvas.on('mouse:down', (event) => {
+        if (this.drawingHexagon) {
+          // Crie um novo hexágono Fabric.js
+          this.hexagon = new fabric.Polygon([
+            { x: 100, y: 0 },
+            { x: 200, y: 0 },
+            { x: 250, y: 100 },
+            { x: 200, y: 200 },
+            { x: 100, y: 200 },
+            { x: 50, y: 100 }
+          ], {
+            left: event.e.offsetX,
+            top: event.e.offsetY,
+            fill: 'transparent',
+             stroke: this.selectedColor,
+            strokeWidth: 2,
+            selectable: true
+          });
+
+          // Adicione o hexágono ao canvas
+          this.canvas.add(this.hexagon);
+
+          // Adicione um evento de movimento do mouse no canvas
+          this.canvas.on('mouse:move', (event) => {
+            // Mova o hexágono com o mouse
+            this.hexagon.set({ left: event.e.offsetX, top: event.e.offsetY });
+            this.hexagon.setCoords();
+
+            // Renderize o canvas novamente
+            this.canvas.renderAll();
+          });
+
+          // Adicione um evento de liberação do mouse no canvas
+          this.canvas.on('mouse:up', () => {
+            // Defina a variável de desenho como falsa e remova os eventos de movimento e liberação do mouse
+            this.drawingHexagon = false;
+            this.canvas.off('mouse:move');
+             this.canvas.off('mouse:down');
+          });
+        }
+      });
+    },
+
+  addArrow() {
+      // Defina a variável de desenho como verdadeira
+      this.drawingArrow = true;
+
+      // Limpe a seleção atual no canvas
+      this.canvas.discardActiveObject();
+      this.canvas.renderAll();
+
+      // Adicione um evento de clique no canvas
+      this.canvas.on('mouse:down', (event) => {
+        if (this.drawingArrow) {
+          // Crie um novo objeto Fabric.js do tipo Path
+          this.arrow = new fabric.Path('M 0 0 L 20 10 L 0 20 L 10 10 z', {
+            left: event.e.offsetX,
+            top: event.e.offsetY,
+            fill: 'transparent',
+           stroke: this.selectedColor,
+            strokeWidth: 2,
+            selectable: true
+          });
+
+          // Adicione a seta ao canvas
+          this.canvas.add(this.arrow);
+
+          // Adicione um evento de movimento do mouse no canvas
+          this.canvas.on('mouse:move', (event) => {
+            // Calcule a posição do final da seta com base na posição do mouse atual e sua posição inicial
+            let dx = event.e.offsetX - this.arrow.left;
+            let dy = event.e.offsetY - this.arrow.top;
+            let angle = Math.atan2(dy, dx);
+            let length = Math.sqrt(dx * dx + dy * dy);
+            let x2 = this.arrow.left + length * Math.cos(angle);
+            let y2 = this.arrow.top + length * Math.sin(angle);
+
+            // Atualize o caminho da seta
+            this.arrow.set({ path: `M 0 0 L ${length} 0 L ${length} ${this.arrow.strokeWidth} L 0 ${this.arrow.strokeWidth} z`, angle: angle * 180 / Math.PI, top: y2, left: x2 });
+            this.arrow.setCoords();
+
+            // Renderize o canvas novamente
+            this.canvas.renderAll();
+          });
+
+          // Adicione um evento de liberação do mouse no canvas
+          this.canvas.on('mouse:up', () => {
+            // Defina a variável de desenho como falsa e remova os eventos de movimento e liberação do mouse
+            this.drawingArrow = false;
+            this.canvas.off('mouse:move');
+            this.canvas.off('mouse:up');
+          });
+        }
+      });
+    },
+
+    clearCanvas() {
+      // Limpa o canvas
+      this.canvas.clear()
+
+      // Remove todos os eventos de mouse do canvas
+      this.canvas.off('mouse:down')
+      this.canvas.off('mouse:move')
+      this.canvas.off('mouse:up')
+      this.canvas.off('object:moving')
+    },
+
+
     erase() {
       this.canvas.isDrawingMode = true;
       this.canvas.freeDrawingBrush.color = "#ffffff";
@@ -188,12 +405,10 @@ import { saveAs } from 'file-saver';
         this.canvas.freeDrawingBrush.color = this.selectedColor;
         this.canvas.freeDrawingBrush.width = this.lineWidth;
       }
+
+      this.canvas.off('mouse:down');
     },
 
-   
-    addcirculo() {
-     
-    },
 
  addEditableText() {
       const editableText = new fabric.IText('Digite aqui...', {
@@ -215,7 +430,33 @@ import { saveAs } from 'file-saver';
       this.editableText = editableText;
     },
 
-     
+
+
+    
+
+     addComment() {
+         // Crie um novo comentário Fabric.js
+      const comment = new fabric.IText('', {
+        left: 100,
+        top: 100,
+        fill: this.comment.color,
+        fontSize: this.comment.fontSize
+      });
+
+      // Adicione o comentário ao canvas
+      this.canvas.add(comment);
+
+      // Selecione o comentário e ative a edição de texto
+      comment.setCoords();
+      this.canvas.setActiveObject(comment);
+      comment.enterEditing();
+
+      // Salve o comentário no objeto de comentário atual
+      this.comment.text = comment.text;
+      this.comment.left = comment.left;
+      this.comment.top = comment.top;
+    },
+
   deleteSelected() {
     const selectedObjects = this.canvas.getActiveObjects();
     this.canvas.discardActiveObject();
@@ -227,20 +468,7 @@ import { saveAs } from 'file-saver';
     }
   },
    
-  undo() {
-      if (this.undoStack.length > 0) {
-        const lastState = this.undoStack.pop();
-        this.redoStack.push(this.canvas.toJSON());
-        this.canvas.loadFromJSON(lastState);
-      }
-    },
-    redo() {
-      if (this.redoStack.length > 0) {
-        const lastState = this.redoStack.pop();
-        this.undoStack.push(this.canvas.toJSON());
-        this.canvas.loadFromJSON(lastState);
-      }
-    },
+ 
     saveState() {
       this.undoStack.push(this.canvas.toJSON());
       this.redoStack = [];
@@ -261,27 +489,10 @@ import { saveAs } from 'file-saver';
       return new Blob([ab], { type: mimeString });
     },
   },
-    compartilhar() {
-    const canvas = this.$refs.canvas;
-
-    // converte o conteúdo do canvas em uma imagem
-    const imagem = canvas.toDataURL("image/png");
-
-    // usa a API Web Share para compartilhar a imagem
-    navigator.share({
-      title: "Compartilhar Canvas",
-      text: "Olha só o que eu desenhei!",
-      url: imagem
-    }).then(() => {
-      console.log("Conteúdo compartilhado com sucesso!");
-    }).catch((error) => {
-      console.log("Erro ao compartilhar conteúdo:", error);
-    });
-  }
 
     }
 
-
+import 'primeicons/primeicons.css';
 </script>
 
 
@@ -289,6 +500,10 @@ import { saveAs } from 'file-saver';
 
 <style>
 
+button{
+  background:none;
+  border:none;
+}
 
 
 * {
@@ -337,7 +552,13 @@ ul {
 
 canvas{
 
-  border: 1px solid black;
+  border-top: none;
+  border-left:  3px solid black;;
+  border-right:  3px solid black;;
+  border-bottom: 3px solid black;
+  border-start-start-radius: 0px;
+  border-end-start-radius: 2rem;
+  border-end-end-radius: 2rem;
 }
 .tools{
   display: flex;
@@ -347,5 +568,6 @@ canvas{
   /* background: black; */
   height: 60px;
   border-radius: 10px;
+  background: rgb(148, 148, 148);
 }
 </style>
