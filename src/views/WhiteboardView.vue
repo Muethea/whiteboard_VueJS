@@ -83,7 +83,6 @@ import { saveAs } from 'file-saver';
            selectedColor: "#000000",
       inputText: '',
       lineWidth: 5,  
-      brushSize: 10,
       tamanhoFonte: 10,
        selectedFont: 'Arial',
        editableText: null,
@@ -398,15 +397,27 @@ import { saveAs } from 'file-saver';
     },
 
       draw() {
-      if (this.canvas.isDrawingMode) {
-        this.canvas.isDrawingMode = false;
-      } else {
-        this.canvas.isDrawingMode = true;
-        this.canvas.freeDrawingBrush.color = this.selectedColor;
-        this.canvas.freeDrawingBrush.width = this.lineWidth;
+     const patternBrush = new fabric.PencilBrush(this.canvas);
+
+      patternBrush.getPatternSrc = function () {
+        var patternCanvas = fabric.document.createElement('canvas');
+        patternCanvas.width = patternCanvas.height = 10;
+        var ctx = patternCanvas.getContext('2d');
+
+        ctx.strokeStyle = this.selectedColor;
+        ctx.beginPath();
+        ctx.moveTo(0, 5);
+        ctx.lineTo(10, 5);
+        ctx.closePath();
+        ctx.stroke();
+        return patternCanvas;
       }
 
-      this.canvas.off('mouse:down');
+      patternBrush.color = this.selectedColor;
+      patternBrush.width = this.lineWidth;
+
+      this.canvas.freeDrawingBrush = patternBrush;
+      this.canvas.isDrawingMode = true;
     },
 
 
