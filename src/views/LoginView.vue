@@ -4,7 +4,7 @@
     <h1>Welcome</h1>
     <form @submit.prevent="login">
       <label for="email">Email:</label>
-      <input  type="email" id="email" v-model="email" required>
+      <input  type="text" id="email" v-model="email" required>
       <label for="password">Password:</label>
       <input type="password" id="password" v-model="password" required>
       <div class="rember">
@@ -36,7 +36,7 @@ export default {
   },
   methods: {
     login() {
-      if (this.email === 'admin@gmail.com' && this.password === 'admin') {
+      if (this.email === 'admin' && this.password === 'admin') {
         // Login successful
         this.$router.replace("/quadro");
         this.$alert("Hello Vue Simple Alert.");
