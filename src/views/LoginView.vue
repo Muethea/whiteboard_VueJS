@@ -16,7 +16,7 @@
           <a href="#">Forgot password?</a>
         </div>
       </div>
-      <button class="login" type="submit">Login</button>
+      <button :disabled="!email && !password" class="login" type="submit">Login</button>
     </form>
     </div>
     
@@ -38,8 +38,7 @@ export default {
     login() {
       if (this.email === 'admin' && this.password === 'admin') {
         // Login successful
-        this.$router.replace("/quadro");
-        this.$alert("Hello Vue Simple Alert.");
+        this.$router.push("/quadro");
    
       } else {
         // Login failed
